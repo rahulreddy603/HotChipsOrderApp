@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
@@ -7,14 +8,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Check for environment variables
+
+
 const razorpay = new Razorpay({
-  key_id: 'rzp_live_KbNeSNLqfHTzAB', // Your live key
-  key_secret: 'uw3CHx4hjuk7TevyBQ7qLgi0', // Replace with your live secret
+  key_id:'rzp_live_KbNeSNLqfHTzAB',
+  key_secret:'uw3CHx4hjuk7TevyBQ7qLgi0',
 });
 
 app.post('/api/create-order', async (req, res) => {
   try {
     const { amount } = req.body;
+    if (!amount) {
+      return res.status(400).json({ error: 'Amount is required' });
+    }
     const options = {
       amount: amount,
       currency: 'INR',
@@ -35,6 +42,9 @@ app.post('/api/create-order', async (req, res) => {
 app.post('/api/verify-payment', (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: 'Missing required payment details' });
+    }
     const generated_signature = crypto
       .createHmac('sha256', 'uw3CHx4hjuk7TevyBQ7qLgi0')
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
