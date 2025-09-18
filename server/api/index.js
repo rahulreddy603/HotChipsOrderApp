@@ -46,7 +46,7 @@ app.post('/api/verify-payment', (req, res) => {
       return res.status(400).json({ error: 'Missing required payment details' });
     }
     const generated_signature = crypto
-      .createHmac('sha256', 'uw3CHx4hjuk7TevyBQ7qLgi0')
+      .createHmac('sha256', 'process.env.RAZORPAY_KEY_SECRET')
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
