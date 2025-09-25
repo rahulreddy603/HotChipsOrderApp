@@ -3,19 +3,35 @@ const express = require('express');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const cors = require('cors');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Check for environment variables
-
+// Validate environment variables
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = process.env;
+if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+  console.error('Error: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set in .env file');
+  process.exit(1);
+}
 
 const razorpay = new Razorpay({
-  key_id:'rzp_live_KbNeSNLqfHTzAB',
-  key_secret:'uw3CHx4hjuk7TevyBQ7qLgi0',
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET,
 });
 
+// Endpoint to get Razorpay key
+app.get('/api/razorpay-key', (req, res) => {
+  try {
+    res.json({ key: RAZORPAY_KEY_ID });
+  } catch (error) {
+    console.error('Error fetching Razorpay key:', error);
+    res.status(500).json({ error: 'Failed to fetch Razorpay key' });
+  }
+});
+
+// Create Razorpay order
 app.post('/api/create-order', async (req, res) => {
   try {
     const { amount } = req.body;
@@ -39,6 +55,7 @@ app.post('/api/create-order', async (req, res) => {
   }
 });
 
+// Verify Razorpay payment
 app.post('/api/verify-payment', (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -46,7 +63,7 @@ app.post('/api/verify-payment', (req, res) => {
       return res.status(400).json({ error: 'Missing required payment details' });
     }
     const generated_signature = crypto
-      .createHmac('sha256', 'process.env.RAZORPAY_KEY_SECRET')
+      .createHmac('sha256', RAZORPAY_KEY_SECRET)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
